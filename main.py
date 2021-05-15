@@ -1,4 +1,6 @@
 from enum import Enum
+from typing import Optional
+
 from fastapi import FastAPI
 
 # FastAPI object instance
@@ -54,3 +56,52 @@ async def get_model(
 async def read_file(file_path: str):
     return {"file_path": file_path}
 
+
+# ----------
+fake_items_db = [{"item_name": "Foo"}, {"item_name": "Bar"}, {"item_name": "Baz"}]
+
+
+# localhost:8000/items2/?skip=0&limit=10
+@app.get("/items2/")
+async def items2(skip: int = 0, limit: int = 10):
+    return fake_items_db[skip : skip + limit]
+
+
+@app.get("/items3/{item_id}")
+async def items3(
+    item_id: str, q: Optional[str] = None
+):  # FastAPI knows optional because of `= None`, Optional is only for editor static check
+    if q:
+        return {"item_id": item_id, "q": q}
+    return {"item_id": item_id}
+
+
+# localhost:8000/items4/foo?short=True
+# localhost:8000/items4/foo?short=true
+# localhost:8000/items4/foo?short=1   -> truthy
+# localhost:8000/items4/foo?short=on  -> truthy
+# localhost:8000/items4/foo?short=yes -> truthy
+@app.get("/items4/{item_id}")
+async def item4(item_id: str, q: Optional[str] = None, short: bool = False):
+    item = {"item_id": item_id}
+    if q:
+        item.update({"q": q})
+    if not short:
+        item.update({"description": "long description"})
+    return item
+
+
+# localhost:8000/items5/foo?needy=soneedy
+@app.get("/items5/{item_id}")
+async def items5(item_id: str, needy: str):  # required parameters
+    item = {"item_id": item_id, "needy": needy}
+    return item
+
+
+# localhost:8000/item6/foo?needy=soneedy&skip=0&limit=0
+@app.get("/items6/{item_id}")
+async def items6(
+    item_id: str, needy: str, skip: int = 0, limit: Optional[int] = None
+):  # needy = required str, skip = required int with default 0, limit = optional int
+    item = {"item_id": item_id, "needy": needy, "skip": skip, "limit": limit}
+    return item
