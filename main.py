@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Optional
 
 from fastapi import FastAPI
+from pydantic import BaseModel
 
 # FastAPI object instance
 app = FastAPI()
@@ -105,3 +106,52 @@ async def items6(
 ):  # needy = required str, skip = required int with default 0, limit = optional int
     item = {"item_id": item_id, "needy": needy, "skip": skip, "limit": limit}
     return item
+
+
+# ----------
+
+
+class Item(BaseModel):
+    name: str
+    description: Optional[str] = None
+    price: float
+    tax: Optional[float] = None
+
+
+# Body
+# {
+#   "name": "some name",
+#   "prince": 50.1
+# }
+# {
+#   "name": "some name",
+#   "prince": 50.1,
+#   "description": "some description",
+#   "tax": "100"
+# }
+@app.post("/items7/")
+async def items7(item: Item):  # expect fields from inside the Item class
+    return item
+
+
+@app.post("/items8")
+async def items8(item: Item):
+    item_dict = item.dict()  # convert item json to dict first
+    if item.tax:  # use dot notation or indexing to access
+        price_with_tax = item.price + item.tax
+        item_dict.update({"price_with_tax": price_with_tax})
+    return item_dict
+
+
+@app.put("/items9/{item_id}")
+async def items9(item_id: int, item: Item):
+    return {"item_id": item_id, **item.dict()}  # Unroll dict
+
+
+# localhost:8000/100/?q=foo
+@app.put("/items10/{item_id}")
+async def items10(item_id: int, item: Item, q: Optional[str] = None):
+    result = {"item_id": item_id, **item.dict()}
+    if q:
+        result.update({"q": q})
+    return result
