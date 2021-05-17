@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from pydantic import BaseModel
 
 # FastAPI object instance
@@ -155,3 +155,73 @@ async def items10(item_id: int, item: Item, q: Optional[str] = None):
     if q:
         result.update({"q": q})
     return result
+
+
+# ----------
+@app.get("/items11/")
+async def items11(
+    q: Optional[str] = Query(None, min_length=3, max_length=50, regex="^fixedquery$")
+):  # User Query for additional validation, first param set default values,
+    # None means optional, min_length and max_length limits length for q,
+    # regex: ^ means start with following chars, fixedquery means exact value fixedquery,
+    # $ ends there, no more chars after fixedquery
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+@app.get("/items12/")
+async def items12(
+    q: str = Query(..., min_length=3, max_length=50)
+):  # Query first param means default, ... means non-optional, q param is required
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+# localhost:8000/items13/?q=foo&q=bar&q=woot
+@app.get("/items13/")
+async def items13(
+    q: Optional[List[str]] = Query(None),
+):  # Optional List accepts multiple input by declaring q multiple times
+    query_items = {"q": q}
+    # {
+    #     "q": [
+    #         "foo",
+    #         "bar",
+    #         "woot"
+    #     ]
+    # }
+    return query_items
+
+
+@app.get("/items14/")
+async def items14(
+    q: List[str] = Query(["foo", "bar", "woot"], title="Query string", min_length=3)
+):  # Required list, default values are declared inside Query
+    # Can also just use q: list = Query([])
+    query_items = {"q": q}
+    return query_items
+
+
+# for example you want parameter to be item-query
+# localhost:8000/items15/?item-query=foobaritem
+# this way, Query will help to match item-query and assign correctly to q
+@app.get("/items15/")
+async def items15(q: Optional[str] = Query(None, alias="item-query")):
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+# Add deprecated args = True to indicate endpoint is deprecated
+# Will showup in Swagger
+@app.get("/items16/")
+async def items16(q: Optional[str] = Query(None, deprecated=True)):
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
