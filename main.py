@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Optional
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Path, Query
 from pydantic import BaseModel
 
 # FastAPI object instance
@@ -222,6 +222,41 @@ async def items15(q: Optional[str] = Query(None, alias="item-query")):
 @app.get("/items16/")
 async def items16(q: Optional[str] = Query(None, deprecated=True)):
     results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+# ----------
+@app.get("/items17/{item_id}")
+async def items17(
+    item_id: int = Path(
+        ..., title="The ID of item to get"
+    ),  # path parameter is always required, use ... as placeholder
+    q: Optional[str] = Query(None, alias="item-query"),  # move q to first pos if it doesnt have default
+):
+    results = {"item_id": item_id}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+# If order of args matter and q without default needs to be last, use * in the first pos
+@app.get("/items18/{item_id}")
+async def items18(*, item_id: int = Path(..., title="The ID"), q: str):
+    results = {"item_id": item_id}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+# Both Query and Path can use string/number validation
+@app.get("/items19/{item_id}")
+async def items19(
+    *, item_id: int = Path(..., title="ID", ge=0, le=1000),
+    q: str, size: float = Query(..., gt=0, lt=10)
+):
+    results = {"item_id": item_id}
     if q:
         results.update({"q": q})
     return results
