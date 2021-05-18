@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Dict, List, Optional, Set
 
-from fastapi import Body, FastAPI, Path, Query
+from fastapi import Body, Cookie, FastAPI, Path, Query
 from pydantic import BaseModel, Field, HttpUrl
 
 # FastAPI object instance
@@ -620,3 +620,10 @@ async def items32(
 ):
     results = {"item_id": item_id, "item": item}
     return results
+
+
+# ----------
+
+@app.get("/items33/")
+async def items33(ads_id: Optional[str] = Cookie(None)):
+    return {"ads_id": ads_id}
