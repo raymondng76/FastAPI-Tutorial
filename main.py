@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Optional
 
-from fastapi import FastAPI, Path, Query
+from fastapi import Body, FastAPI, Path, Query
 from pydantic import BaseModel
 
 # FastAPI object instance
@@ -233,7 +233,9 @@ async def items17(
     item_id: int = Path(
         ..., title="The ID of item to get"
     ),  # path parameter is always required, use ... as placeholder
-    q: Optional[str] = Query(None, alias="item-query"),  # move q to first pos if it doesnt have default
+    q: Optional[str] = Query(
+        None, alias="item-query"
+    ),  # move q to first pos if it doesnt have default
 ):
     results = {"item_id": item_id}
     if q:
@@ -253,10 +255,123 @@ async def items18(*, item_id: int = Path(..., title="The ID"), q: str):
 # Both Query and Path can use string/number validation
 @app.get("/items19/{item_id}")
 async def items19(
-    *, item_id: int = Path(..., title="ID", ge=0, le=1000),
-    q: str, size: float = Query(..., gt=0, lt=10)
+    *,
+    item_id: int = Path(..., title="ID", ge=0, le=1000),
+    q: str,
+    size: float = Query(..., gt=0, lt=10),
 ):
     results = {"item_id": item_id}
     if q:
         results.update({"q": q})
+    return results
+
+
+# ----------
+class Item2(BaseModel):
+    name: str
+    description: Optional[str] = None
+    price: float
+    tax: Optional[float] = None
+
+
+@app.put("/items20/{item_id}")
+async def items20(
+    *,
+    item_id: int = Path(..., title="ID", ge=0, le=1000),
+    q: Optional[str] = None,
+    item: Optional[Item2] = None,  # can set body parameter as optional
+):
+    results = {"item_id": item_id}
+    if q:
+        results.update({"q": q})
+    if item:
+        results.update({"item": item})
+    return results
+
+
+class User(BaseModel):
+    username: str
+    full_name: Optional[str] = None
+
+
+# Body
+# {
+#     "item": {
+#         "name": "Foo",
+#         "description": "The pretender",
+#         "price": 42.0,
+#         "tax": 3.2
+#     },
+#     "user": {
+#         "username": "dave",
+#         "full_name": "Dave Grohl"
+#     }
+# }
+
+
+@app.put("/items21/{item_id}")
+async def items21(item_id: int, item: Item2, user: User):
+    results = {"item_id": item_id, "item": item, "user": user}
+    return results
+
+
+# {
+#     "item": {
+#         "name": "Foo",
+#         "description": "The pretender",
+#         "price": 42.0,
+#         "tax": 3.2
+#     },
+#     "user": {
+#         "username": "dave",
+#         "full_name": "Dave Grohl"
+#     },
+#     "importance": 5
+# }
+
+
+@app.put("/items22/{item_id}")
+async def items22(
+    item_id: int, item: Item2, user: User, importance: int = Body(...)
+):  # use Body(...) for singular value body
+    results = {"item_id": item_id, "item": item, "user": user}
+    return results
+
+
+@app.put("/items23/{item_id}")
+async def items23(
+    *,
+    item_id: int,
+    item: Item2,
+    user: User,
+    importance: int = Body(..., gt=0),  # Body also support validation
+    q: Optional[str] = None,
+):
+    results = {"item_id": item_id, "item": item, "user": user, "importance": importance}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+# Expect body like this
+# {
+#     "item": {
+#         "name": "Foo",
+#         "description": "The pretender",
+#         "price": 42.0,
+#         "tax": 3.2
+#     }
+# }
+# instead of this
+# {
+#     "name": "Foo",
+#     "description": "The pretender",
+#     "price": 42.0,
+#     "tax": 3.2
+# }
+
+
+@app.put("/items24/{item_id}")
+async def items24(item_id: int, item: Item2 = Body(..., embed=True)):
+    results = {"item_id": item_id, "item": item}
     return results
