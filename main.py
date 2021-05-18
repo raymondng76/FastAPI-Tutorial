@@ -2,7 +2,7 @@ from enum import Enum
 from typing import List, Optional
 
 from fastapi import Body, FastAPI, Path, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # FastAPI object instance
 app = FastAPI()
@@ -373,5 +373,21 @@ async def items23(
 
 @app.put("/items24/{item_id}")
 async def items24(item_id: int, item: Item2 = Body(..., embed=True)):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+
+# ----------
+class Item3(BaseModel):
+    name: str
+    description: Optional[str] = Field(  # field works the same as Query, Path and Body
+        None, title="item", max_length=300
+    )
+    price: float = Field(..., gt=0, description="price > 0")
+    tax: Optional[float] = None
+
+
+@app.put("/items25/{item_id}")
+async def items25(item_id: int, item: Item3 = Body(..., embed=True)):
     results = {"item_id": item_id, "item": item}
     return results
