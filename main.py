@@ -1,8 +1,8 @@
 from enum import Enum
-from typing import List, Optional
+from typing import Dict, List, Optional, Set
 
 from fastapi import Body, FastAPI, Path, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
 
 # FastAPI object instance
 app = FastAPI()
@@ -391,3 +391,132 @@ class Item3(BaseModel):
 async def items25(item_id: int, item: Item3 = Body(..., embed=True)):
     results = {"item_id": item_id, "item": item}
     return results
+
+
+# ----------
+
+class Item4(BaseModel):
+    name: str
+    description: Optional[str] = None
+    price: float
+    tax: Optional[float] = None
+    tags: list = []  # define list attribute or use the List typing for type hint
+    # tags: List[str] = []
+    # tags: Set[str] = set()    for using set
+
+
+@app.put("/items26/{item_id}")
+async def items26(item_id: int, item: Item4):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+
+# ----------
+class Image1(BaseModel):
+    # url: str
+    url: HttpUrl  # use HttpUrl for URL validation, else use string above
+    name: str
+
+
+class Item5(BaseModel):
+    name: str
+    description: Optional[str] = None
+    price: float
+    tax: Optional[float] = None
+    tags: Set[str] = set()
+    image: Optional[Image1] = None  # Use Image1 type
+
+# Body
+# {
+#     "name": "Foo",
+#     "description": "The pretender",
+#     "price": 42.0,
+#     "tax": 3.2,
+#     "tags": ["rock", "metal", "bar"],
+#     "image": {
+#         "url": "http://example.com/baz.jpg",
+#         "name": "The Foo live"
+#     }
+# }
+
+
+@app.put("/items27/{item_id}")
+async def items27(item_id: int, item: Item5):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+# Body
+# {
+#     "name": "Foo",
+#     "description": "The pretender",
+#     "price": 42.0,
+#     "tax": 3.2,
+#     "tags": [
+#         "rock",
+#         "metal",
+#         "bar"
+#     ],
+#     "images": [
+#         {
+#             "url": "http://example.com/baz.jpg",
+#             "name": "The Foo live"
+#         },
+#         {
+#             "url": "http://example.com/dave.jpg",
+#             "name": "The Baz"
+#         }
+#     ]
+# }
+
+
+class Item6(BaseModel):
+    name: str
+    description: Optional[str] = None
+    price: float
+    tax: Optional[float] = None
+    tags: Set[str] = set()
+    images: Optional[List[Image1]] = None
+
+
+@app.put("/items28/{item_id}")
+async def items28(item_id: int, item: Item6):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+
+class Offer1(BaseModel):
+    name: str
+    description: Optional[str] = None
+    price: float
+    items: List[Item6] # Deep nested models
+
+
+@app.post("/offers1/")
+async def offers1(offer: Offer1):
+    return offer
+
+
+# [
+#     {
+#         "url": "http://example.com/baz.jpg",
+#         "name": "The Foo live"
+#     },
+#     {
+#         "url": "http://example.com/dave.jpg",
+#         "name": "The Baz"
+#     }
+# ]
+
+@app.post("/images1/multiple")
+async def images1(images: List[Image1]): # JSON body with a list at the top level value
+    return images
+
+
+# {
+#     1: 1.1,
+#     2: 2.2
+# }
+
+@app.post("/index-weights1")
+async def index_weights1(weights: Dict[int, float]):
+    return weights
