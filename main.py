@@ -395,6 +395,7 @@ async def items25(item_id: int, item: Item3 = Body(..., embed=True)):
 
 # ----------
 
+
 class Item4(BaseModel):
     name: str
     description: Optional[str] = None
@@ -426,6 +427,7 @@ class Item5(BaseModel):
     tags: Set[str] = set()
     image: Optional[Image1] = None  # Use Image1 type
 
+
 # Body
 # {
 #     "name": "Foo",
@@ -444,6 +446,7 @@ class Item5(BaseModel):
 async def items27(item_id: int, item: Item5):
     results = {"item_id": item_id, "item": item}
     return results
+
 
 # Body
 # {
@@ -488,7 +491,7 @@ class Offer1(BaseModel):
     name: str
     description: Optional[str] = None
     price: float
-    items: List[Item6] # Deep nested models
+    items: List[Item6]  # Deep nested models
 
 
 @app.post("/offers1/")
@@ -507,8 +510,9 @@ async def offers1(offer: Offer1):
 #     }
 # ]
 
+
 @app.post("/images1/multiple")
-async def images1(images: List[Image1]): # JSON body with a list at the top level value
+async def images1(images: List[Image1]):  # JSON body with a list at the top level value
     return images
 
 
@@ -517,6 +521,102 @@ async def images1(images: List[Image1]): # JSON body with a list at the top leve
 #     2: 2.2
 # }
 
+
 @app.post("/index-weights1")
 async def index_weights1(weights: Dict[int, float]):
     return weights
+
+
+# ----------
+
+
+class Item7(BaseModel):
+    name: str
+    description: Optional[str] = None
+    price: float
+    tax: Optional[float] = None
+
+    class Config:  # keyword for pydantic
+        schema_extra = {  # keyword for pydantic
+            "example": {  # example will show up in JSON schema
+                "name": "Foo",
+                "description": "A very nice Item",
+                "price": 35.4,
+                "tax": 3.2,
+            }
+        }
+
+
+@app.put("/items29/{item_id}")
+async def items29(item_id: int, item: Item):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+
+class Item8(BaseModel):
+    name: str = Field(..., example="Foo")  # Example stated will pass to JSON schema
+    description: Optional[str] = Field(None, example="A very nice item")
+    price: float = Field(..., example=35.4)
+    tax: Optional[float] = Field(None, example=3.2)
+
+
+@app.put("/items30/{item_id}")
+async def items30(item_id: int, item: Item):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+
+@app.put("/items31/{item_id}")
+async def items31(
+    item_id: int,
+    item: Item7 = Body(
+        ...,
+        example={  # declare examples straight in the Body
+            "name": "Foo",
+            "description": "A very nice item",
+            "price": 35.4,
+            "tax": 3.2,
+        },
+    ),
+):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+
+@app.put("/items32/{item_id}")
+async def items32(
+    *,
+    item_id: int,
+    item: Item7 = Body(
+        ...,
+        examples={ # multiple examples, shown as dropdown in Swagger UI
+            "normal": {
+                "summary": "A normal example",
+                "description": "A **normal** item works correctly",
+                "value": {
+                    "name": "Foo",
+                    "description": "A very nice item",
+                    "price": 35.4,
+                    "tax": 3.2,
+                },
+            },
+            "converted": {
+                "summary": "An example with converted data",
+                "description": "convert price to actual num",
+                "value": {  # description and tax optional
+                    "name": "Bar",
+                    "price": "35.3",
+                },
+            },
+            "invalid": {
+                "summary": "Invalid data is rejected with an error",
+                "value": {
+                    "name": "Baz",
+                    "price": "thirty five point four",
+                },
+            },
+        },
+    ),
+):
+    results = {"item_id": item_id, "item": item}
+    return results
